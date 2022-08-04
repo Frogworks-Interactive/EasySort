@@ -5,7 +5,7 @@ using System;
 using System.Numerics;
 using XivCommon;
 
-namespace SamplePlugin
+namespace EasySort
 {
     // It is good to have this be disposable in general, in case you ever need it
     // to do any cleanup

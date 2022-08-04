@@ -8,11 +8,11 @@ using System.Reflection;
 using XivCommon;
 
 
-namespace SamplePlugin
+namespace EasySort
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Sample Plugin";
+        public string Name => "Easy Sort";
 
         private const string commandName = "/boinky";
 
