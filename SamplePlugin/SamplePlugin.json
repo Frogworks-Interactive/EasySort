@@ -1,0 +1,13 @@
+{
+  "Author": "Frogworks Interactive",
+  "Name": "Easy Inventory Sort",
+  "Punchline": "sort your inventory a little faster",
+  "Description": "description",
+  "InternalName": "EasySort",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "sort",
+    "plugin",
+    "inventory"
+  ]
+}
