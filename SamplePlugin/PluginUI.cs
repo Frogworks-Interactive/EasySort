@@ -1,6 +1,9 @@
-﻿using ImGuiNET;
+﻿using Dalamud.Interface;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
 using System;
 using System.Numerics;
+using XivCommon;
 
 namespace SamplePlugin
 {
@@ -8,6 +11,21 @@ namespace SamplePlugin
     // to do any cleanup
     class PluginUI : IDisposable
     {
+
+        //internal Plugin plugin { get; }
+        internal const ImGuiWindowFlags HelperWindowFlags = ImGuiWindowFlags.NoBackground
+                                                    | ImGuiWindowFlags.NoDecoration
+                                                    | ImGuiWindowFlags.NoCollapse
+                                                    | ImGuiWindowFlags.NoTitleBar
+                                                    | ImGuiWindowFlags.NoNav
+                                                    | ImGuiWindowFlags.NoNavFocus
+                                                    | ImGuiWindowFlags.NoNavInputs
+                                                    | ImGuiWindowFlags.NoResize
+                                                    | ImGuiWindowFlags.NoScrollbar
+                                                    | ImGuiWindowFlags.NoSavedSettings
+                                                    | ImGuiWindowFlags.NoFocusOnAppearing
+                                                    | ImGuiWindowFlags.AlwaysAutoResize
+                                                    | ImGuiWindowFlags.NoDocking;
         private Configuration configuration;
 
         private ImGuiScene.TextureWrap goatImage;
@@ -26,6 +44,7 @@ namespace SamplePlugin
             get { return this.settingsVisible; }
             set { this.settingsVisible = value; }
         }
+        internal const string btnText  = "Sort";
 
         // passing in the image here just for simplicity
         public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage)
@@ -74,7 +93,7 @@ namespace SamplePlugin
 
                 ImGui.Text("Have a goat:");
                 ImGui.Indent(55);
-                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
+                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(100, 100));
                 ImGui.Unindent(55);
             }
             ImGui.End();
@@ -100,6 +119,95 @@ namespace SamplePlugin
                     this.configuration.Save();
                 }
             }
+            ImGui.End();
+        }
+
+        internal static unsafe Vector2? DrawPosForAddon(AtkUnitBase* addon, bool right = false)
+        {
+            if (addon == null)
+            {
+                return null;
+            }
+
+            var root = addon->RootNode;
+            if (root == null)
+            {
+                return null;
+            }
+
+            var xModifier = right
+                ? root->Height * addon->Scale
+                : 0;
+
+            return ImGuiHelpers.MainViewport.Pos
+                   + new Vector2(addon->X, addon->Y)
+                   + Vector2.UnitY * xModifier
+                   
+                   + Vector2.UnitX * 21 * addon->Scale
+                   - Vector2.UnitY * 40 * addon->Scale
+
+                   - Vector2.UnitY * ImGui.CalcTextSize("A") 
+                   - Vector2.UnitY * (ImGui.GetStyle().FramePadding.Y + ImGui.GetStyle().FrameBorderSize);
+        }
+        internal class HelperStyles : IDisposable
+        {
+            internal HelperStyles()
+            {
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, Vector2.Zero);
+            }
+
+            public void Dispose()
+            {
+                ImGui.PopStyleVar(3);
+            }
+        }
+        internal static unsafe void DrawHelper(AtkUnitBase* addon, string id, bool right, XivCommonBase common, ImGuiScene.TextureWrap goatImage)
+        {
+            var drawPos = DrawPosForAddon(addon, right);
+            if (drawPos == null)
+            {
+                return;
+            }
+
+            using (new HelperStyles())
+            {
+                // get first frame
+                ImGui.SetNextWindowPos(drawPos.Value, ImGuiCond.Appearing);
+                if (!ImGui.Begin($"##{id}", HelperWindowFlags))
+                {
+                    ImGui.End();
+                    return;
+                }
+            }
+           
+            if (ImGui.ImageButton(goatImage.ImGuiHandle, new Vector2(30, 30)))
+
+            {
+                common.Functions.Chat.SendMessage("/isort condition inventory category asc");
+                common.Functions.Chat.SendMessage("/isort execute inventory");
+                common.Functions.Chat.SendMessage("/echo sorted inventory! <se.6>");
+
+
+            };
+            //ImGui.SetNextItemWidth(DropdownWidth());
+            //if (ImGui.BeginCombo($"##{id}-combo", Plugin.PluginName))
+            //{
+            //    try
+            //    {
+            //        dropdown();
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        PluginLog.LogError(ex, "Error drawing helper combo");
+            //    }
+
+            //    ImGui.EndCombo();
+            //}
+
+            ImGui.SetWindowPos(drawPos.Value);
+
             ImGui.End();
         }
     }

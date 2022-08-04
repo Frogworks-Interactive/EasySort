@@ -1,13 +1,13 @@
 {
-  "Author": "your name here",
-  "Name": "Sample Plugin",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
-  "InternalName": "samplePlugin",
+  "Author": "Frogworks Interactive",
+  "Name": "Easy Inventory Sort",
+  "Punchline": "sort your inventory a little faster",
+  "Description": "description",
+  "InternalName": "EasySort",
   "ApplicableVersion": "any",
   "Tags": [
-    "sample",
+    "sort",
     "plugin",
-    "goats"
+    "inventory"
   ]
 }
