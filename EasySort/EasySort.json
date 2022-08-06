@@ -11,7 +11,8 @@
     "inventory"
   ],
   "DalamudApiLevel": 6,
-  "RepoUrl": "https://github.com/Frogworks-Interactive/EasySort"
+  "RepoUrl": "https://github.com/Frogworks-Interactive/EasySort",
+  "AssemblyVersion": "0.0.0.1"
 
 
 }
