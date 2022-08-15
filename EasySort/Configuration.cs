@@ -1,6 +1,7 @@
 ﻿using Dalamud.Configuration;
 using Dalamud.Plugin;
 using System;
+using System.Collections.Generic;
 
 namespace EasySort
 {
@@ -9,10 +10,17 @@ namespace EasySort
     {
         public int Version { get; set; } = 0;
 
-        public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+        public bool AutoSort { get; set; } = true;
+
+        public bool ShowChat { get; set; } = false;
+
+        public string Condition { get; set; } = "category";
+
+        public List<Util.SortConditonItem> Conditions { get; set; } = new List<Util.SortConditonItem> {
+        };
+
 
         // the below exist just to make saving less cumbersome
-
         [NonSerialized]
         private DalamudPluginInterface? pluginInterface;
 

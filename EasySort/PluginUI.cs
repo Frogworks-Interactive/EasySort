@@ -1,9 +1,12 @@
 ﻿using Dalamud.Interface;
+using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using System;
 using System.Numerics;
 using XivCommon;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace EasySort
 {
@@ -27,8 +30,9 @@ namespace EasySort
                                                     | ImGuiWindowFlags.AlwaysAutoResize
                                                     | ImGuiWindowFlags.NoDocking;
         private Configuration configuration;
+        private Plugin plugin;
 
-        private ImGuiScene.TextureWrap goatImage;
+        internal const int settingWidth = 350;
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -47,15 +51,14 @@ namespace EasySort
         internal const string btnText  = "Sort";
 
         // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage)
+        public PluginUI(Configuration configuration,  Plugin plugin)
         {
             this.configuration = configuration;
-            this.goatImage = goatImage;
+            this.plugin = plugin;
         }
 
         public void Dispose()
         {
-            this.goatImage.Dispose();
         }
 
         public void Draw()
@@ -68,7 +71,6 @@ namespace EasySort
             // draw delegates as low as possible.
 
             DrawMainWindow();
-            DrawSettingsWindow();
         }
 
         public void DrawMainWindow()
@@ -82,7 +84,7 @@ namespace EasySort
             ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
             if (ImGui.Begin("My Amazing Window", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
-                ImGui.Text($"The random config bool is {this.configuration.SomePropertyToBeSavedAndWithADefault}");
+                ImGui.Text($"The random config bool is {this.configuration.AutoSort}");
 
                 if (ImGui.Button("Show Settings"))
                 {
@@ -91,38 +93,135 @@ namespace EasySort
 
                 ImGui.Spacing();
 
-                ImGui.Text("Have a goat:");
-                ImGui.Indent(55);
-                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(100, 100));
-                ImGui.Unindent(55);
             }
             ImGui.End();
         }
 
-        public void DrawSettingsWindow()
+        public void DropdownUi( string title, Util.SortConditonItem sortCondition, int index = 0)
+        {
+            if (configuration.Conditions.ElementAtOrDefault(index) == null) return;
+            if (ImGui.BeginCombo($"##condition-combo-{index}", Util.conditions[sortCondition.Condition]))
+            {
+                try
+                {
+                    foreach (KeyValuePair<string, string> condition in Util.conditions.ToList())
+                        if (ImGui.Selectable($"{condition.Value}"))
+                        {
+
+                            configuration.Conditions[index] = new Util.SortConditonItem(sortCondition.InventoryType, condition.Key, sortCondition.Direction);
+                            this.configuration.Save();
+                            plugin.runSort();
+                        }
+
+                }
+                catch (Exception ex)
+                {
+                    PluginLog.LogError(ex, "Error drawing helper combo");
+                }
+
+                ImGui.EndCombo();
+              
+            }
+        }
+        public unsafe void DrawSettingsWindow(AtkUnitBase* addon = null)
         {
             if (!SettingsVisible)
             {
                 return;
             }
+            var drawPos = DrawPosForAddon(addon, false, true);
+            if (drawPos != null)
+            {
+                ImGui.SetNextWindowPos(drawPos.Value, ImGuiCond.Appearing);
 
-            ImGui.SetNextWindowSize(new Vector2(232, 75), ImGuiCond.Always);
-            if (ImGui.Begin("A Wonderful Configuration Window", ref this.settingsVisible,
+            }
+
+            ImGui.SetNextWindowSize(new Vector2(settingWidth, 300), ImGuiCond.Always);
+            if (ImGui.Begin("Inventory Sort Settings", ref this.settingsVisible,
                 ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // can't ref a property, so use a local copy
-                var configValue = this.configuration.SomePropertyToBeSavedAndWithADefault;
-                if (ImGui.Checkbox("Random Config Bool", ref configValue))
+                var AutoSortValue = this.configuration.AutoSort;
+                if (ImGui.Checkbox("Automatically sort on Inventory Open", ref AutoSortValue))
                 {
-                    this.configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-                    // can save immediately on change, if you don't want to provide a "Save and Close" button
+                    this.configuration.AutoSort = AutoSortValue;
                     this.configuration.Save();
                 }
+                // can't ref a property, so use a local copy
+                var ShowChatValue = this.configuration.ShowChat;
+                if (ImGui.Checkbox("Show text in Chat", ref ShowChatValue))
+                {
+                    this.configuration.ShowChat = ShowChatValue;
+                    this.configuration.Save();
+                }
+                if (configuration.Conditions is not null && configuration.Conditions.Count > 0)
+                {
+                    ImGui.Separator();
+
+                    ImGui.Text("Sort By:");
+
+                    for (var i = 0; i < configuration.Conditions.Count; i++ )
+                    {
+
+                        var value = configuration.Conditions[i];
+                        // one of the random ids of all time
+                        ImGui.PushID(3023030 + i); // Use field index as identifier.
+
+                        DropdownUi("sort by:", value, i);
+                        ImGui.SameLine();
+                        var DirectionRef = value.Direction == Util.Ascending;
+
+                        if (Util.ImGuiToggleButton(Util.Direction[value.Direction],ref DirectionRef))
+                        {
+
+                            PluginLog.Log(value.Direction);
+                            if (value.Direction == Util.Ascending)
+                            {
+                                configuration.Conditions[i] = new Util.SortConditonItem(value.InventoryType, value.Condition, Util.Descending);
+                            }
+                            else 
+                            {
+                                configuration.Conditions[i] = new Util.SortConditonItem(value.InventoryType, value.Condition, Util.Ascending);
+
+                            }
+                            this.configuration.Save();
+
+                            plugin.runSort();
+
+
+
+                        }
+                        ImGui.PopID(); // Use field index as identifier.
+
+                    }
+
+                    ImGui.Separator();
+
+                    if (ImGui.Button("Add Condition"))
+                    {
+                        configuration.Conditions.Add(new Util.SortConditonItem());
+
+                    }
+                    ImGui.SameLine();
+                    if (configuration.Conditions.Count > 1)
+                    if (ImGui.Button("Remove Condition"))
+                    {
+                        configuration.Conditions.RemoveAt(configuration.Conditions.Count - 1);
+
+                    }
+
+                }
+
+
+            }
+            if (drawPos != null)
+            {
+                ImGui.SetWindowPos(drawPos.Value);
             }
             ImGui.End();
         }
 
-        internal static unsafe Vector2? DrawPosForAddon(AtkUnitBase* addon, bool right = false)
+        internal static unsafe Vector2? DrawPosForAddon(AtkUnitBase* addon, bool bottom = false, bool quickAction = false)
         {
             if (addon == null)
             {
@@ -135,16 +234,19 @@ namespace EasySort
                 return null;
             }
 
-            var xModifier = right
-                ? root->Height * addon->Scale
-                : 0;
+            var xModifier = bottom ?
+                 root->Width * addon->Scale : 0;
+
+            var quickActionPos = quickAction ? new Vector2(-settingWidth - 10, 0)  : new Vector2(0, 0) - Vector2.UnitX * 130 * addon->Scale
+                   + Vector2.UnitY * 31 * addon->Scale;
+
+
 
             return ImGuiHelpers.MainViewport.Pos
                    + new Vector2(addon->X, addon->Y)
-                   + Vector2.UnitY * xModifier
+                   + Vector2.UnitX * xModifier
                    
-                   + Vector2.UnitX * 21 * addon->Scale
-                   - Vector2.UnitY * 40 * addon->Scale
+                   + quickActionPos
 
                    - Vector2.UnitY * ImGui.CalcTextSize("A") 
                    - Vector2.UnitY * (ImGui.GetStyle().FramePadding.Y + ImGui.GetStyle().FrameBorderSize);
@@ -163,7 +265,7 @@ namespace EasySort
                 ImGui.PopStyleVar(3);
             }
         }
-        internal static unsafe void DrawHelper(AtkUnitBase* addon, string id, bool right, XivCommonBase common, ImGuiScene.TextureWrap goatImage)
+        internal  unsafe void DrawHelper(AtkUnitBase* addon, string id, bool right, XivCommonBase common, ImGuiScene.TextureWrap goatImage)
         {
             var drawPos = DrawPosForAddon(addon, right);
             if (drawPos == null)
@@ -182,15 +284,20 @@ namespace EasySort
                 }
             }
            
-            if (ImGui.ImageButton(goatImage.ImGuiHandle, new Vector2(30, 30)))
+            if (ImGui.ImageButton(goatImage.ImGuiHandle, new Vector2(16, 16)))
 
             {
-                common.Functions.Chat.SendMessage("/isort condition inventory category asc");
-                common.Functions.Chat.SendMessage("/isort execute inventory");
-                common.Functions.Chat.SendMessage("/echo sorted inventory! <se.6>");
+                plugin.runSort();
 
 
             };
+            ImGui.SameLine();
+            if (ImGui.Button("settings"))
+
+            {
+                SettingsVisible = !SettingsVisible;
+
+            }
             //ImGui.SetNextItemWidth(DropdownWidth());
             //if (ImGui.BeginCombo($"##{id}-combo", Plugin.PluginName))
             //{

@@ -6,13 +6,16 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.IO;
 using System.Reflection;
 using XivCommon;
-
+using System.Collections.Generic;
+using ImGuiNET;
 
 namespace EasySort
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Easy Sort";
+        internal const string PluginName = "Easy Sort";
+
+        public string Name => PluginName;
 
         private const string commandName = "/boinky";
 
@@ -23,22 +26,28 @@ namespace EasySort
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
+        private bool isOpen { get; set; } = false;
 
         internal ImGuiScene.TextureWrap image { get; set; }
+        /// <summary>
+        /// Gets an included FontAwesome icon font.
+        /// </summary>
+        public static ImFontPtr IconFont { get; private set; }
+
         public Plugin(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
-
+         //   IconFont = Util.SetupFont(pluginInterface);
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
             common = new(); // just need the chat feature to send commands
             // you might normally want to embed resources and load them from the manifest stream
             var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
             var goatImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
-            this.PluginUi = new PluginUI(this.Configuration, goatImage);
+            this.PluginUi = new PluginUI(this.Configuration, this);
             this.image = goatImage;
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
@@ -61,14 +70,36 @@ namespace EasySort
         {
             // in response to the slash command, just display our main ui
             this.PluginUi.Visible = true;
-            common.Functions.Chat.SendMessage("/echo boingo!  ");
+
+        }
+
+        public void runSort(string inven = "inventory", string direction="asc")
+        {
+
+            common.Functions.Chat.SendMessage("/isort clear inventory");
+            if (Configuration.Conditions is not null && Configuration.Conditions.Count > 0)
+            {
+                foreach (var condition in Configuration.Conditions)
+                {
+                    if (condition.Condition == "tab") direction = "";
+
+                    common.Functions.Chat.SendMessage($"/isort condition {condition.InventoryType} {condition.Condition} {condition.Direction}");
+
+                }
+
+            }
+            common.Functions.Chat.SendMessage("/isort execute inventory");
+            if (Configuration.ShowChat)
+            common.Functions.Chat.SendMessage("/echo [EasySort] sorted inventory!");
 
         }
 
         private void DrawUI()
         {
             this.PluginUi.Draw();
-            drawInven();
+        
+                drawInven();
+            
         }
 
         private void DrawConfigUI()
@@ -76,29 +107,41 @@ namespace EasySort
             this.PluginUi.SettingsVisible = true;
         }
 
+        private unsafe void onDrawInven(AtkUnitBase* addon)
+        {
+            PluginUi.DrawHelper(addon, "easy-inventory-sort", true, common, image);
+            PluginUi.DrawSettingsWindow(addon);
+            if (!isOpen && Configuration.AutoSort) runSort();
 
+            this.isOpen = true;
+        }
         private unsafe void drawInven()
         {
             if (GameGui == null || image == null) return;
             
             var addon = (AtkUnitBase*)GameGui.GetAddonByName("InventoryLarge", 1);
-            if (addon != null && addon->IsVisible)
+            if (addon != null && addon->IsVisible )
             {
-                PluginUI.DrawHelper(addon, "glamaholic-editor-helper", true, common, image);
+
+                onDrawInven(addon);
                 return;
             }
              addon = (AtkUnitBase*)GameGui.GetAddonByName("Inventory", 1);
             if (addon != null && addon->IsVisible)
             {
-                PluginUI.DrawHelper(addon, "glamaholic-editor-helper", true, common, image);
+                onDrawInven(addon);
+
                 return;
             }
              addon = (AtkUnitBase*)GameGui.GetAddonByName("InventoryExpansion", 1);
             if (addon != null && addon->IsVisible)
             {
-                PluginUI.DrawHelper(addon, "glamaholic-editor-helper", true, common, image);
+                onDrawInven(addon);
+
                 return;
             }
+            this.isOpen = false;
+
             return;
         }
     }
