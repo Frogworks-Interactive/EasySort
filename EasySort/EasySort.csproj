@@ -3,10 +3,10 @@
   <PropertyGroup>
     <Authors>Frogworks Interactive</Authors>
     <Company>Frogworks Interactive</Company>
-    <Version>0.0.0.2</Version>
-    <Description>A sample plugin.</Description>
+    <Version>0.0.0.3</Version>
+    <Description>Sort your inventory a little bit faster</Description>
     <Copyright></Copyright>
-    <PackageProjectUrl>https://github.com/goatcorp/SamplePlugin</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Frogworks-Interactive/EasySort</PackageProjectUrl>
 	
   </PropertyGroup>
 
@@ -26,11 +26,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\Data\goat.png">
+    <Content Include="..\Data\sort.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
-      <Content Include="..\Data\FontAwesome6Free-Solid-900.otf">
+      <Content Include="..\Data\setting.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>

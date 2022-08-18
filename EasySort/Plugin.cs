@@ -9,6 +9,7 @@ using XivCommon;
 using System.Collections.Generic;
 using ImGuiNET;
 
+
 namespace EasySort
 {
     public sealed class Plugin : IDalamudPlugin
@@ -25,10 +26,13 @@ namespace EasySort
         private DalamudPluginInterface PluginInterface { get; init; }
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
+
         private PluginUI PluginUi { get; init; }
         private bool isOpen { get; set; } = false;
 
-        internal ImGuiScene.TextureWrap image { get; set; }
+        internal ImGuiScene.TextureWrap SortImage { get; set; }
+        internal ImGuiScene.TextureWrap SettingImage { get; set; }
+
         /// <summary>
         /// Gets an included FontAwesome icon font.
         /// </summary>
@@ -45,16 +49,20 @@ namespace EasySort
             this.Configuration.Initialize(this.PluginInterface);
             common = new(); // just need the chat feature to send commands
             // you might normally want to embed resources and load them from the manifest stream
-            var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-            var goatImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
-            this.PluginUi = new PluginUI(this.Configuration, this);
-            this.image = goatImage;
+            var imagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "sort.png");
+            var sortImage = this.PluginInterface.UiBuilder.LoadImage(imagePath);
+            var imagePath2 = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "setting.png");
+            var SettingImage = this.PluginInterface.UiBuilder.LoadImage(imagePath2);
+            this.PluginUi = new PluginUI(this.Configuration, this,this.PluginInterface);
+            this.SortImage = sortImage;
+            this.SettingImage = SettingImage;
+
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "A useful message to display in /xlhelp"
             });
-
-            this.PluginInterface.UiBuilder.Draw += DrawUI;
+//            interfaceManager.OverrideGameCursor = false;
+           this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
@@ -84,6 +92,8 @@ namespace EasySort
                     if (condition.Condition == "tab") direction = "";
 
                     common.Functions.Chat.SendMessage($"/isort condition {condition.InventoryType} {condition.Condition} {condition.Direction}");
+                    if (Configuration.ShowChat)
+                        common.Functions.Chat.SendMessage($"/echo [EasySort] ran condition: {condition.InventoryType} {condition.Condition} {condition.Direction}");
 
                 }
 
@@ -92,6 +102,7 @@ namespace EasySort
             if (Configuration.ShowChat)
             common.Functions.Chat.SendMessage("/echo [EasySort] sorted inventory!");
 
+
         }
 
         private void DrawUI()
@@ -99,7 +110,9 @@ namespace EasySort
             this.PluginUi.Draw();
         
                 drawInven();
-            
+          //  PluginInterface.UiBuilder.OverrideGameCursor = false;
+
+
         }
 
         private void DrawConfigUI()
@@ -109,7 +122,7 @@ namespace EasySort
 
         private unsafe void onDrawInven(AtkUnitBase* addon)
         {
-            PluginUi.DrawHelper(addon, "easy-inventory-sort", true, common, image);
+            PluginUi.DrawHelper(addon, "easy-inventory-sort", true, common);
             PluginUi.DrawSettingsWindow(addon);
             if (!isOpen && Configuration.AutoSort) runSort();
 
@@ -117,7 +130,7 @@ namespace EasySort
         }
         private unsafe void drawInven()
         {
-            if (GameGui == null || image == null) return;
+            if (GameGui == null || SortImage == null || SettingImage == null) return;
             
             var addon = (AtkUnitBase*)GameGui.GetAddonByName("InventoryLarge", 1);
             if (addon != null && addon->IsVisible )

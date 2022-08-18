@@ -7,6 +7,7 @@ using System.Numerics;
 using XivCommon;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Plugin;
 
 namespace EasySort
 {
@@ -31,6 +32,7 @@ namespace EasySort
                                                     | ImGuiWindowFlags.NoDocking;
         private Configuration configuration;
         private Plugin plugin;
+        private DalamudPluginInterface pluginInterface;
 
         internal const int settingWidth = 350;
 
@@ -51,10 +53,12 @@ namespace EasySort
         internal const string btnText  = "Sort";
 
         // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration,  Plugin plugin)
+        public PluginUI(Configuration configuration,  Plugin plugin, DalamudPluginInterface pluginInterface)
         {
             this.configuration = configuration;
             this.plugin = plugin;
+            this.pluginInterface = pluginInterface;
+
         }
 
         public void Dispose()
@@ -195,22 +199,30 @@ namespace EasySort
 
                     }
 
-                    ImGui.Separator();
+                   
 
+                }
+                ImGui.Separator();
+                if (configuration.Conditions is not null)
+                {
                     if (ImGui.Button("Add Condition"))
                     {
                         configuration.Conditions.Add(new Util.SortConditonItem());
+                        plugin.runSort();
+
 
                     }
                     ImGui.SameLine();
-                    if (configuration.Conditions.Count > 1)
-                    if (ImGui.Button("Remove Condition"))
-                    {
-                        configuration.Conditions.RemoveAt(configuration.Conditions.Count - 1);
+                    if ( configuration.Conditions.Count > 0)
+                        if (ImGui.Button("Remove Condition"))
+                        {
+                            configuration.Conditions.RemoveAt(configuration.Conditions.Count - 1);
+                            plugin.runSort();
 
-                    }
 
+                   }
                 }
+              
 
 
             }
@@ -237,8 +249,8 @@ namespace EasySort
             var xModifier = bottom ?
                  root->Width * addon->Scale : 0;
 
-            var quickActionPos = quickAction ? new Vector2(-settingWidth - 10, 0)  : new Vector2(0, 0) - Vector2.UnitX * 130 * addon->Scale
-                   + Vector2.UnitY * 31 * addon->Scale;
+            var quickActionPos = quickAction ? new Vector2(-settingWidth - 10, 0)  : new Vector2(0, 0) - Vector2.UnitX * 95 * addon->Scale
+                   + Vector2.UnitY * 29 * addon->Scale;
 
 
 
@@ -265,7 +277,7 @@ namespace EasySort
                 ImGui.PopStyleVar(3);
             }
         }
-        internal  unsafe void DrawHelper(AtkUnitBase* addon, string id, bool right, XivCommonBase common, ImGuiScene.TextureWrap goatImage)
+        internal  unsafe void DrawHelper(AtkUnitBase* addon, string id, bool right, XivCommonBase common)
         {
             var drawPos = DrawPosForAddon(addon, right);
             if (drawPos == null)
@@ -283,21 +295,35 @@ namespace EasySort
                     return;
                 }
             }
-           
-            if (ImGui.ImageButton(goatImage.ImGuiHandle, new Vector2(16, 16)))
+            var btnsize = (float)24;
 
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, Vector2.Zero);
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 13 );
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0, 0, 0, 0));
+            if (ImGui.ImageButton(plugin.SortImage.ImGuiHandle, new Vector2(btnsize, btnsize)))  plugin.runSort();
+            if (ImGui.IsItemHovered())
             {
-                plugin.runSort();
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                ImGui.BeginTooltip();
+                ImGui.Text("Sort Inventroy");
 
-
-            };
-            ImGui.SameLine();
-            if (ImGui.Button("settings"))
-
-            {
-                SettingsVisible = !SettingsVisible;
-
+                ImGui.EndTooltip();
             }
+
+
+            ImGui.SameLine();
+            if (ImGui.ImageButton(plugin.SettingImage.ImGuiHandle, new Vector2(btnsize, btnsize))) SettingsVisible = !SettingsVisible;
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                ImGui.BeginTooltip();
+                ImGui.Text("Easy Sort Settings");
+
+                ImGui.EndTooltip();
+            }
+
+            ImGui.PopStyleVar(2);
+            ImGui.PopStyleColor();
             //ImGui.SetNextItemWidth(DropdownWidth());
             //if (ImGui.BeginCombo($"##{id}-combo", Plugin.PluginName))
             //{
