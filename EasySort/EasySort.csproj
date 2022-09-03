@@ -22,7 +22,6 @@
 	  <Deterministic>false</Deterministic>
 	  <NullableContextOptions>enable</NullableContextOptions>
 	  <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,8 +40,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="2.1.6" />
-    <PackageReference Include="XivCommon" Version="5.0.1-alpha.1" />
+    <PackageReference Include="DalamudPackager" Version="2.1.8" />
+    <PackageReference Include="XivCommon" Version="6.0.2" />
     <Reference Include="FFXIVClientStructs">
       <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
       <Private>false</Private>
