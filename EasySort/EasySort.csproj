@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Authors>Frogworks Interactive</Authors>
     <Company>Frogworks Interactive</Company>
-    <Version>0.0.0.3</Version>
+    <Version>0.0.0.4</Version>
     <Description>Sort your inventory a little bit faster</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Frogworks-Interactive/EasySort</PackageProjectUrl>
