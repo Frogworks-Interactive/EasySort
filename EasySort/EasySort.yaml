@@ -1,9 +1,10 @@
 name: Easy Inventory Sort
 author: Frogworks Interactive
 punchline: sort your inventory a little faster
-description: description
+description: i love sorting!!!
 repo_url: https://github.com/Frogworks-Interactive/OOF
 internal_name: EasySort
+dalamud_api_level: 8
 tags:
   - sort
   - inventory

@@ -10,9 +10,9 @@
     "plugin",
     "inventory"
   ],
-  "DalamudApiLevel": 7,
+  "DalamudApiLevel": 8,
   "RepoUrl": "https://github.com/Frogworks-Interactive/EasySort",
-  "AssemblyVersion": "0.0.0.4"
+  "AssemblyVersion": "0.0.0.5"
 
 
 }
